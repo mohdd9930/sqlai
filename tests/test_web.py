@@ -12,6 +12,7 @@ import pandas as pd
 
 from askdata.pipeline import AnswerResult
 from askdata import web
+from askdata import config
 from askdata.web import AskDataHandler
 
 
@@ -119,6 +120,14 @@ class WebServerTests(unittest.TestCase):
         create_server.assert_called_once_with(("0.0.0.0", 10000), AskDataHandler)
         server.serve_forever.assert_called_once()
         server.server_close.assert_called_once()
+
+    def test_model_name_must_come_from_environment_configuration(self):
+        with patch.object(config, "MODEL_NAME", "gemini-test-model"):
+            self.assertEqual(config.get_model_name(), "gemini-test-model")
+
+        with patch.object(config, "MODEL_NAME", ""):
+            with self.assertRaisesRegex(RuntimeError, "ASKDATA_MODEL"):
+                config.get_model_name()
 
 
 if __name__ == "__main__":

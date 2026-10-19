@@ -10,7 +10,16 @@ load_dotenv(PROJECT_ROOT / ".env")
 
 # Google Gemini configuration
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY", "")
-MODEL_NAME = os.environ.get("ASKDATA_MODEL", "gemini-2.5-flash")
+MODEL_NAME = os.environ.get("ASKDATA_MODEL", "").strip()
+
+
+def get_model_name() -> str:
+    if not MODEL_NAME:
+        raise RuntimeError(
+            "ASKDATA_MODEL is not configured. Set it in .env or the hosting "
+            "provider's environment variables."
+        )
+    return MODEL_NAME
 
 DB_PATH = str(PROJECT_ROOT / os.environ.get("ASKDATA_DB_PATH", "askdata.db"))
 SEMANTIC_LAYER_PATH = str(PROJECT_ROOT / "semantic_layer.yaml")

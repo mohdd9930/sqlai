@@ -37,21 +37,25 @@ On Windows, run `run.bat` from the project folder (or double-click it). It creat
 the virtual environment, installs dependencies, creates `.env` if needed, seeds
 the sample database if it is missing, and starts the web UI at
 `http://localhost:8000`. Add your Gemini API key
-to `.env` as `GEMINI_API_KEY` to enable Gemini; without a key, the app runs in
-offline demo mode.
+to `.env` as `GEMINI_API_KEY` and select the model with `ASKDATA_MODEL` to enable
+Gemini; without a key, the app runs in offline demo mode. The model setting has
+no code default: local `.env` or the hosting provider's environment variables are
+the source of truth.
 
 To set things up manually:
 
 ```bash
 cd <project-folder>
 python -m pip install -r requirements.txt
-cp .env.example .env   # then edit .env and set GEMINI_API_KEY
+cp .env.example .env   # then edit .env and set GEMINI_API_KEY / ASKDATA_MODEL
 python -m askdata.data.seed_db
 python -m askdata.web
 ```
 
 The UI, API, and charts are served from the same local server and port. To use the
 command-line interface instead, run `python -m askdata.cli`.
+For Render, configure both `GEMINI_API_KEY` and `ASKDATA_MODEL` in the service's
+environment settings, then redeploy.
 
 ## Example session
 

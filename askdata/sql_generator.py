@@ -10,7 +10,7 @@ import sqlglot
 from google import genai
 from google.genai import types
 
-from askdata.config import GEMINI_API_KEY, MODEL_NAME, OFFLINE_MODE
+from askdata.config import GEMINI_API_KEY, OFFLINE_MODE, get_model_name
 from askdata.schema_context import build_prompt_context, load_semantic_layer
 
 _client: Optional[genai.Client] = None
@@ -64,6 +64,7 @@ def generate_sql(
     if OFFLINE_MODE:
         return _generate_sql_offline(question, previous_sql)
 
+    model_name = get_model_name()
     client = _get_client()
     system = SYSTEM_PROMPT.format(schema_context=build_prompt_context())
 
@@ -80,7 +81,7 @@ def generate_sql(
     user_parts.append(f"Question: {question}")
 
     response = client.models.generate_content(
-        model=MODEL_NAME,
+        model=model_name,
         contents="\n\n".join(user_parts),
         config=types.GenerateContentConfig(
             system_instruction=system,

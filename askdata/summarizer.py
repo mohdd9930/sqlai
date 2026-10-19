@@ -8,7 +8,7 @@ import pandas as pd
 from google import genai
 from google.genai import types
 
-from askdata.config import GEMINI_API_KEY, MODEL_NAME, OFFLINE_MODE
+from askdata.config import GEMINI_API_KEY, OFFLINE_MODE, get_model_name
 
 _client: Optional[genai.Client] = None
 
@@ -27,6 +27,7 @@ def summarize(question: str, df: pd.DataFrame) -> str:
     if OFFLINE_MODE:
         return _summarize_offline(df)
 
+    model_name = get_model_name()
     preview = df.head(20).to_csv(index=False)
     prompt = (
         f"Question: {question}\n\n"
@@ -35,7 +36,7 @@ def summarize(question: str, df: pd.DataFrame) -> str:
         "user. Be specific with numbers. No preamble, no markdown."
     )
     response = _get_client().models.generate_content(
-        model=MODEL_NAME,
+        model=model_name,
         contents=prompt,
         config=types.GenerateContentConfig(
             temperature=0.2,
