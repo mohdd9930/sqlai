@@ -1,15 +1,17 @@
 import http.client
 import json
+import os
 import tempfile
 import threading
 import unittest
 from http.server import ThreadingHTTPServer
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pandas as pd
 
 from askdata.pipeline import AnswerResult
+from askdata import web
 from askdata.web import AskDataHandler
 
 
@@ -46,7 +48,7 @@ class WebServerTests(unittest.TestCase):
         self.connection.request("GET", "/")
         page = self.connection.getresponse()
         self.assertEqual(page.status, 200)
-        self.assertIn(b"Your questions", page.read())
+        self.assertIn(b"Latest answer", page.read())
 
         self.connection.request("GET", "/api/status")
         status = self.connection.getresponse()
@@ -107,6 +109,16 @@ class WebServerTests(unittest.TestCase):
         self.connection.request("GET", "/charts/../../README.md")
         response = self.connection.getresponse()
         self.assertEqual(response.status, 404)
+
+    def test_server_binds_to_render_host_and_port(self):
+        server = Mock()
+        with patch.dict(os.environ, {"PORT": "10000"}):
+            with patch.object(web, "ThreadingHTTPServer", return_value=server) as create_server:
+                web.main()
+
+        create_server.assert_called_once_with(("0.0.0.0", 10000), AskDataHandler)
+        server.serve_forever.assert_called_once()
+        server.server_close.assert_called_once()
 
 
 if __name__ == "__main__":

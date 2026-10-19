@@ -8,7 +8,6 @@ const connectionLabel = document.querySelector("#connection-label");
 const followUpWords = ["this", "that", "same", "split", "also", "now", "instead", "compare", "again"];
 
 let latestSql = null;
-let completedQuestions = 0;
 
 function appendText(parent, tagName, className, text) {
   const element = document.createElement(tagName);
@@ -111,16 +110,19 @@ function addMetricsCell(row, item) {
 }
 
 function renderResult(item) {
-  document.querySelector("#empty-state")?.remove();
   const row = document.createElement("tr");
   row.className = "result-row";
   addQuestionCell(row, item);
   addQueryCell(row, item);
   addOutputCell(row, item);
   addMetricsCell(row, item);
-  resultsBody.prepend(row);
-  completedQuestions += 1;
-  resultCount.textContent = `${completedQuestions} ${completedQuestions === 1 ? "question" : "questions"}`;
+  resultsBody.replaceChildren(row);
+  resultCount.textContent = "Latest answer";
+}
+
+function clearPreviousResult() {
+  resultsBody.replaceChildren();
+  resultCount.textContent = "Loading…";
 }
 
 function isFollowUp(question) {
@@ -150,6 +152,7 @@ form.addEventListener("submit", async (event) => {
 
   askButton.disabled = true;
   askButton.textContent = "Thinking…";
+  clearPreviousResult();
   statusMessage.textContent = "Working on your answer…";
   statusMessage.className = "request-status is-visible";
 
@@ -173,6 +176,7 @@ form.addEventListener("submit", async (event) => {
   } catch (error) {
     statusMessage.textContent = error.message;
     statusMessage.className = "request-status is-visible status-text-error";
+    resultCount.textContent = "No answer";
   } finally {
     askButton.disabled = false;
     askButton.replaceChildren();

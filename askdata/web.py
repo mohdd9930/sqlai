@@ -2,6 +2,7 @@
 import json
 import logging
 import mimetypes
+import os
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from time import perf_counter
@@ -158,8 +159,10 @@ def main() -> None:
             "Run: python -m askdata.data.seed_db"
         )
 
-    server = ThreadingHTTPServer(("127.0.0.1", 8000), AskDataHandler)
-    print("AskData UI running at http://localhost:8000 (Ctrl+C to stop)")
+    host = "0.0.0.0"
+    port = int(os.environ.get("PORT", "8000"))
+    server = ThreadingHTTPServer((host, port), AskDataHandler)
+    print(f"AskData UI listening on {host}:{port}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
