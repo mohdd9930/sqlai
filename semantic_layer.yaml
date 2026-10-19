@@ -1,0 +1,226 @@
+# Semantic layer for the "Group Mobility" sample project (concept note section 8.1).
+# Hand-authored here; in the real system these cards would be auto-crawled + LLM-drafted
+# then reviewed by the project owner (section 8.5).
+
+project_id: group_mobility
+
+tables:
+  - name: subsidiaries
+    description: One row per Axis Bank group subsidiary/entity.
+    grain: one row = one subsidiary
+    primary_key: id
+    columns:
+      - name: id
+        type: INTEGER
+        description: Subsidiary id.
+      - name: name
+        type: TEXT
+        description: Subsidiary / entity display name.
+        synonyms: [subsidiary, sub, entity, org entity, company]
+
+  - name: jobs
+    description: Internal job postings raised on the Group Mobility platform.
+    grain: one row = one job posting
+    primary_key: id
+    columns:
+      - name: id
+        type: INTEGER
+        description: Job id.
+      - name: title
+        type: TEXT
+        description: Job title.
+      - name: department
+        type: TEXT
+        description: Hiring department.
+      - name: subsidiary_id
+        type: INTEGER
+        description: Subsidiary the job belongs to. FK -> subsidiaries.id.
+        synonyms: [subsidiary, sub, entity]
+
+  - name: employees
+    description: Employees eligible to apply for internal mobility.
+    grain: one row = one employee
+    primary_key: id
+    columns:
+      - name: id
+        type: INTEGER
+        description: Employee id.
+      - name: name
+        type: TEXT
+        description: Employee display name.
+      - name: department
+        type: TEXT
+        description: Employee's current department.
+      - name: gender
+        type: TEXT
+        description: Employee gender, one of M/F/O.
+        enum_values: [M, F, O]
+      - name: subsidiary_id
+        type: INTEGER
+        description: Subsidiary the employee currently belongs to. FK -> subsidiaries.id.
+        synonyms: [subsidiary, sub, entity]
+
+  - name: applications
+    description: >
+      One row per internal job application raised by an employee. Tracks progress through
+      the hiring funnel (screening -> assessment -> interview -> decision -> offered -> joined)
+      or drop-out as 'rejected' at any point. Detailed interview verdicts live in interview_feedback.
+    grain: one row = one application
+    primary_key: id
+    columns:
+      - name: id
+        type: INTEGER
+        description: Application id.
+      - name: employee_id
+        type: INTEGER
+        description: Applicant. FK -> employees.id.
+      - name: job_id
+        type: INTEGER
+        description: Job applied to. FK -> jobs.id.
+      - name: applied_date
+        type: DATE
+        description: Date the application was raised.
+        synonyms: [date, applied on]
+      - name: stage
+        type: TEXT
+        description: >
+          Current position of the application in the hiring funnel. Ordered progression:
+          screening -> assessment -> interview -> decision -> offered -> joined.
+          'rejected' means the application dropped out at some point in the funnel
+          (see interview_feedback for whether it got as far as an interview).
+        enum_values: [screening, assessment, interview, decision, offered, joined, rejected]
+        synonyms: [status, funnel stage, pipeline stage]
+      - name: joining_date
+        type: DATE
+        description: Date the candidate actually joined. NULL unless stage = 'joined'.
+        synonyms: [date of joining, doj]
+
+  - name: interview_feedback
+    description: >
+      One row per interview round conducted for an application. An application can have
+      multiple rounds (e.g. L1, L2); each round records its own select/reject verdict.
+    grain: one row = one interview round for one application
+    primary_key: id
+    columns:
+      - name: id
+        type: INTEGER
+        description: Interview feedback id.
+      - name: application_id
+        type: INTEGER
+        description: Application this interview round belongs to. FK -> applications.id.
+      - name: round_number
+        type: INTEGER
+        description: 1-indexed interview round number for this application (1, 2, 3, ...).
+        synonyms: [round, interview round]
+      - name: interviewer
+        type: TEXT
+        description: Name of the interviewer who gave this feedback.
+      - name: interview_date
+        type: DATE
+        description: Date this interview round was conducted.
+      - name: result
+        type: TEXT
+        description: Verdict given by the interviewer for this round.
+        enum_values: [select, reject]
+        synonyms: [verdict, outcome, feedback]
+      - name: comments
+        type: TEXT
+        description: Free-text interviewer comment explaining the verdict.
+
+relationships:
+  - from: jobs.subsidiary_id
+    to: subsidiaries.id
+    cardinality: many-to-one
+  - from: employees.subsidiary_id
+    to: subsidiaries.id
+    cardinality: many-to-one
+  - from: applications.employee_id
+    to: employees.id
+    cardinality: many-to-one
+  - from: applications.job_id
+    to: jobs.id
+    cardinality: many-to-one
+  - from: interview_feedback.application_id
+    to: applications.id
+    cardinality: many-to-one
+
+metrics:
+  - name: conversion_rate
+    description: Share of applications that ended up with the candidate joining.
+    sql_fragment: >
+      CAST(SUM(CASE WHEN stage = 'joined' THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*)
+  - name: applications_count
+    description: Total number of applications raised.
+    sql_fragment: COUNT(*)
+  - name: joined_count
+    description: Number of applications where the candidate joined.
+    sql_fragment: SUM(CASE WHEN stage = 'joined' THEN 1 ELSE 0 END)
+  - name: offered_count
+    description: Number of applications that reached an offer (includes those who later joined).
+    sql_fragment: SUM(CASE WHEN stage IN ('offered', 'joined') THEN 1 ELSE 0 END)
+  - name: offer_to_join_rate
+    description: Of applications that were offered, the share that actually joined.
+    sql_fragment: >
+      CAST(SUM(CASE WHEN stage = 'joined' THEN 1 ELSE 0 END) AS FLOAT)
+      / NULLIF(SUM(CASE WHEN stage IN ('offered', 'joined') THEN 1 ELSE 0 END), 0)
+  - name: interview_reject_rate
+    description: Of interview rounds conducted, the share that ended in a reject verdict.
+    sql_fragment: >
+      CAST(SUM(CASE WHEN result = 'reject' THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*)
+
+synonyms:
+  subsidiary: subsidiaries.name
+  sub: subsidiaries.name
+  entity: subsidiaries.name
+  attrition: null  # not applicable to this sample schema; kept as an example placeholder
+  conversion: applications.stage = 'joined'
+  converted: applications.stage = 'joined'
+  offer: applications.stage IN ('offered', 'joined')
+  joining date: applications.joining_date
+  doj: applications.joining_date
+  select: interview_feedback.result = 'select'
+  reject: interview_feedback.result = 'reject'
+
+golden_queries:
+  - question: How many applications came in last quarter, and how many joined, by subsidiary?
+    sql: >
+      SELECT s.name AS subsidiary,
+             COUNT(*) AS applications,
+             SUM(CASE WHEN a.stage = 'joined' THEN 1 ELSE 0 END) AS joined
+      FROM applications a
+      JOIN jobs j ON a.job_id = j.id
+      JOIN subsidiaries s ON j.subsidiary_id = s.id
+      WHERE a.applied_date >= date('now', '-3 months')
+      GROUP BY s.name
+      ORDER BY applications DESC;
+  - question: Show the number of applications at each stage of the funnel for the last 90 days.
+    sql: >
+      SELECT stage, COUNT(*) AS count
+      FROM applications
+      WHERE applied_date >= date('now', '-90 days')
+      GROUP BY stage;
+  - question: How many applications are there in total?
+    sql: >
+      SELECT COUNT(*) AS total_applications FROM applications;
+  - question: What is the overall conversion rate?
+    sql: >
+      SELECT CAST(SUM(CASE WHEN stage = 'joined' THEN 1 ELSE 0 END) AS FLOAT) / COUNT(*) AS conversion_rate
+      FROM applications;
+  - question: How many interview rounds ended in a reject, by subsidiary?
+    sql: >
+      SELECT s.name AS subsidiary, COUNT(*) AS rejected_rounds
+      FROM interview_feedback f
+      JOIN applications a ON f.application_id = a.id
+      JOIN jobs j ON a.job_id = j.id
+      JOIN subsidiaries s ON j.subsidiary_id = s.id
+      WHERE f.result = 'reject'
+      GROUP BY s.name
+      ORDER BY rejected_rounds DESC;
+  - question: How many candidates are offered but have not yet joined?
+    sql: >
+      SELECT COUNT(*) AS offered_not_joined FROM applications WHERE stage = 'offered';
+  - question: What is the offer-to-join rate?
+    sql: >
+      SELECT CAST(SUM(CASE WHEN stage = 'joined' THEN 1 ELSE 0 END) AS FLOAT)
+             / NULLIF(SUM(CASE WHEN stage IN ('offered', 'joined') THEN 1 ELSE 0 END), 0) AS offer_to_join_rate
+      FROM applications;

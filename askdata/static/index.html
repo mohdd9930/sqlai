@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f5f7fb">
+    <title>AskData | Hiring insights</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="/static/app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="/" aria-label="AskData home">
+          <span class="brand-mark" aria-hidden="true">A</span>
+          <span>ask<span class="brand-light">data</span></span>
+        </a>
+        <div class="workspace-label">WORKSPACE</div>
+        <div class="workspace-link"><span aria-hidden="true">▦</span> Hiring analytics</div>
+        <div class="sidebar-bottom">
+          <span class="avatar" aria-hidden="true">AD</span>
+          <span><strong>Local workspace</strong><small>Private · localhost</small></span>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <header class="topbar">
+          <span>Workspace <span class="crumb-divider">/</span> Hiring analytics</span>
+          <span class="connection"><span class="connection-dot"></span><span id="connection-label">Connecting…</span></span>
+        </header>
+
+        <section class="page-intro">
+          <div class="eyebrow">YOUR DATA, IN PLAIN ENGLISH</div>
+          <h1>Hiring insights</h1>
+          <p>Ask a question about your hiring funnel. Get a clear answer, the SQL behind it, and a chart when the results support one.</p>
+        </section>
+
+        <section class="ask-card" aria-labelledby="ask-heading">
+          <div class="ask-heading-row">
+            <div>
+              <h2 id="ask-heading">Ask a question</h2>
+              <p>Use everyday language to explore your applications data.</p>
+            </div>
+            <span class="read-only-label"><span aria-hidden="true">⌑</span> Read only</span>
+          </div>
+          <form id="question-form">
+            <label class="visually-hidden" for="question-input">Your question</label>
+            <textarea id="question-input" name="question" rows="2" maxlength="2000" placeholder="e.g. What is the offer-to-join rate?" required></textarea>
+            <div class="form-footer">
+              <span>Try an example below</span>
+              <button id="ask-button" class="primary-button" type="submit"><span aria-hidden="true">↗</span> Ask AskData</button>
+            </div>
+          </form>
+          <div class="suggestions" aria-label="Example questions">
+            <button type="button" class="suggestion">What is the offer-to-join rate?</button>
+            <button type="button" class="suggestion">How many applications are there in total?</button>
+            <button type="button" class="suggestion">Show applications by subsidiary</button>
+          </div>
+          <div id="request-status" class="request-status" role="status" aria-live="polite"></div>
+        </section>
+
+        <section class="results-section" aria-labelledby="results-heading">
+          <div class="results-heading-row">
+            <div>
+              <h2 id="results-heading">Your questions</h2>
+              <p>Answers and metrics from this browser session.</p>
+            </div>
+            <span id="result-count" class="result-count">0 questions</span>
+          </div>
+          <div class="results-scroll">
+            <table class="results-table">
+              <thead>
+                <tr>
+                  <th scope="col">QUESTION</th>
+                  <th scope="col">QUERY</th>
+                  <th scope="col">OUTPUT</th>
+                  <th scope="col">METRICS</th>
+                </tr>
+              </thead>
+              <tbody id="results-body">
+                <tr id="empty-state">
+                  <td colspan="4">
+                    <div class="empty-state">
+                      <span class="empty-icon" aria-hidden="true">⌕</span>
+                      <strong>Your answers will appear here</strong>
+                      <span>Ask a question above to get started.</span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+        <footer class="page-footer">AskData <span>·</span> A private, read-only workspace running on your machine.</footer>
+      </main>
+    </div>
+  </body>
+</html>
